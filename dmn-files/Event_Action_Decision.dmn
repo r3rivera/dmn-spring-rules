@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<definitions expressionLanguage="https://www.omg.org/spec/DMN/20191111/FEEL/" id="definitions_Event_Action_Decision" name="Event Action Decision" namespace="https://poc.ruleengine.com" typeLanguage="https://www.omg.org/spec/DMN/20191111/FEEL/" xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/">
+  <itemDefinition id="itemDef_UserProfile" name="UserProfile">
+    <itemComponent id="ic_age" name="age">
+      <typeRef>number</typeRef>
+    </itemComponent>
+    <itemComponent id="ic_accountType" name="accountType">
+      <typeRef>string</typeRef>
+    </itemComponent>
+    <itemComponent id="ic_segmentType" name="segmentType">
+      <typeRef>string</typeRef>
+    </itemComponent>
+  </itemDefinition>
+  <itemDefinition id="itemDef_EventRequest" name="EventRequest">
+    <itemComponent id="ic_eventName" name="eventName">
+      <typeRef>string</typeRef>
+    </itemComponent>
+    <itemComponent id="ic_applicationCode" name="applicationCode">
+      <typeRef>string</typeRef>
+    </itemComponent>
+    <itemComponent id="ic_userProfile" name="userProfile">
+      <typeRef>UserProfile</typeRef>
+    </itemComponent>
+  </itemDefinition>
+  <inputData id="inputData_eventRequest" name="eventRequest">
+    <variable id="var_eventRequest" name="eventRequest" typeRef="EventRequest"/>
+  </inputData>
+  <decision id="decision_eventMatch" name="eventMatch">
+    <variable id="var_eventMatch" name="eventMatch" typeRef="boolean"/>
+    <informationRequirement id="_dc8e85e5">
+      <requiredInput href="#inputData_eventRequest"/>
+    </informationRequirement>
+    <decisionTable hitPolicy="FIRST" id="dt_eventMatch">
+      <input id="_e328b388" label="Application Code">
+        <inputExpression id="_d10ef652" typeRef="string">
+          <text>eventRequest.applicationCode</text>
+        </inputExpression>
+      </input>
+      <input id="_b31fa5f6" label="Event Name">
+        <inputExpression id="_117b0a2a" typeRef="string">
+          <text>eventRequest.eventName</text>
+        </inputExpression>
+      </input>
+      <output id="_66ddad2c" name="eventMatch" typeRef="boolean"/>
+      <rule id="_ed1154a2">
+        <description>Match ANL OpenAccount event</description>
+        <inputEntry id="_fa7660c7">
+          <text>"ANL"</text>
+        </inputEntry>
+        <inputEntry id="_3ce4dae4">
+          <text>"OpenAccount"</text>
+        </inputEntry>
+        <outputEntry id="_0caaa99e">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="_9e5eaa00">
+        <description>No match for any other event</description>
+        <inputEntry id="_1c3a57c0">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="_0427adbf">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="_5dfb813a">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_userProfileMatch" name="userProfileMatch">
+    <variable id="var_userProfileMatch" name="userProfileMatch" typeRef="boolean"/>
+    <informationRequirement id="_6d5ce64e">
+      <requiredInput href="#inputData_eventRequest"/>
+    </informationRequirement>
+    <decisionTable hitPolicy="FIRST" id="dt_userProfileMatch">
+      <input id="_1df751d8" label="Age">
+        <inputExpression id="_a306b7ac" typeRef="number">
+          <text>eventRequest.userProfile.age</text>
+        </inputExpression>
+      </input>
+      <input id="_db7badc7" label="Account Type">
+        <inputExpression id="_9a8b8ad7" typeRef="string">
+          <text>eventRequest.userProfile.accountType</text>
+        </inputExpression>
+      </input>
+      <input id="_1948db62" label="Segment Type">
+        <inputExpression id="_2bb7beb3" typeRef="string">
+          <text>eventRequest.userProfile.segmentType</text>
+        </inputExpression>
+      </input>
+      <output id="_6a29c801" name="userProfileMatch" typeRef="boolean"/>
+      <rule id="_6f1843f4">
+        <description>Advised OW account holder between 18 and 65</description>
+        <inputEntry id="_9d2de064">
+          <text>(18..65)</text>
+        </inputEntry>
+        <inputEntry id="_124c7d67">
+          <text>"OW"</text>
+        </inputEntry>
+        <inputEntry id="_8e049ed2">
+          <text>"Advised"</text>
+        </inputEntry>
+        <outputEntry id="_25e13b79">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="_615cb1d7">
+        <description>No match for other profiles</description>
+        <inputEntry id="_d77441eb">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="_468943d0">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="_476c4943">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="_581cbd8c">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_Action_Decision" name="Action Decision">
+    <variable id="var_Action_Decision" name="action" typeRef="string"/>
+    <informationRequirement id="_aa3eb6a8">
+      <requiredDecision href="#decision_eventMatch"/>
+    </informationRequirement>
+    <informationRequirement id="_edc19dcb">
+      <requiredDecision href="#decision_userProfileMatch"/>
+    </informationRequirement>
+    <decisionTable hitPolicy="FIRST" id="dt_Action_Decision">
+      <input id="_94943649" label="Event Match">
+        <inputExpression id="_7c6fc923" typeRef="boolean">
+          <text>eventMatch</text>
+        </inputExpression>
+      </input>
+      <input id="_172a9e6b" label="User Profile Match">
+        <inputExpression id="_3e6e875f" typeRef="boolean">
+          <text>userProfileMatch</text>
+        </inputExpression>
+      </input>
+      <output id="_310d0f4b" name="action" typeRef="string"/>
+      <rule id="_d721aef4">
+        <description>Both event and profile match - send SMS</description>
+        <inputEntry id="_aa1ab7f6">
+          <text>true</text>
+        </inputEntry>
+        <inputEntry id="_9a372869">
+          <text>true</text>
+        </inputEntry>
+        <outputEntry id="_8bfce074">
+          <text>"SendSMS"</text>
+        </outputEntry>
+      </rule>
+      <rule id="_e2395693">
+        <description>Any other combination - do not send</description>
+        <inputEntry id="_d6c934ad">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="_4b2a1a6d">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="_21159a77">
+          <text>"NoSend"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
