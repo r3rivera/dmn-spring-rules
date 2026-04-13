@@ -3,6 +3,7 @@ package com.poc.ruleengine.service.dmn;
 import com.poc.ruleengine.domain.InputField;
 import com.poc.ruleengine.domain.client.ClientAttribute;
 import com.poc.ruleengine.model.rules.DecisionRulesetRequest;
+import com.poc.ruleengine.service.database.RulesetStorageService;
 import com.poc.ruleengine.service.dmn.input.RuleInputHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class DecisionRulesetBuilderService {
     private static final String FEEL_NS = DMNBuilderHelper.FEEL_NS;
 
     private final RuleInputHandler ruleInputHandler;
+    private final RulesetStorageService rulesetStorageService;
 
     public String buildDecisionRules(DecisionRulesetRequest request) throws Exception {
 
@@ -42,8 +44,6 @@ public class DecisionRulesetBuilderService {
         definitions.setAttribute("namespace", "https://poc.ruleengine.com/dmn");
         definitions.setAttribute("expressionLanguage", FEEL_NS);
         definitions.setAttribute("typeLanguage", FEEL_NS);
-
-
 
 
         // Define the expected input structure
@@ -63,14 +63,19 @@ public class DecisionRulesetBuilderService {
         final Element itemDefinition = DMNBuilderHelper.createItemDefinition(mainDoc, eventName);
         itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "applicationCode", "string"));
         itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "eventName", "string"));
-        itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "evaluatedRequest", inputClassName));
+        itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "evaluatedUser", inputClassName));
         definitions.appendChild(itemDefinition);
 
         // Define that input field that reference the itemDefinition
         definitions.appendChild(DMNBuilderHelper.createInputDatatElement(mainDoc, eventName));
 
+        // Create the decision element for event
+        definitions.appendChild(DMNBuilderHelper.createEventDecisionElement(mainDoc, request,eventName + "Request"));
+
         // Add the Event Definition
         mainDoc.appendChild(definitions);
-        return DMNBuilderHelper.toXmlString(mainDoc);
+        final String xmlString = DMNBuilderHelper.toXmlString(mainDoc);
+        rulesetStorageService.storeDecisionRules(request.getApplicationCode(), xmlString);
+        return xmlString;
     }
 }

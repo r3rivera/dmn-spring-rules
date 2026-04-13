@@ -27,42 +27,42 @@
   </inputData>
   <decision id="decision_eventMatch" name="eventMatch">
     <variable id="var_eventMatch" name="eventMatch" typeRef="boolean"/>
-    <informationRequirement id="_2b2feb8c">
+    <informationRequirement id="_de9188c0">
       <requiredInput href="#inputData_eventRequest"/>
     </informationRequirement>
     <decisionTable hitPolicy="FIRST" id="dt_eventMatch">
-      <input id="_a794d161" label="Application Code">
-        <inputExpression id="_9a4842ef" typeRef="string">
+      <input id="_300e78c7" label="Application Code">
+        <inputExpression id="_246219e6" typeRef="string">
           <text>eventRequest.applicationCode</text>
         </inputExpression>
       </input>
-      <input id="_4fdc06e1" label="Event Name">
-        <inputExpression id="_c6fca70c" typeRef="string">
+      <input id="_cbcd6683" label="Event Name">
+        <inputExpression id="_b598b901" typeRef="string">
           <text>eventRequest.eventName</text>
         </inputExpression>
       </input>
-      <output id="_ded82641" name="eventMatch" typeRef="boolean"/>
-      <rule id="_249e5556">
+      <output id="_a5796593" name="eventMatch" typeRef="boolean"/>
+      <rule id="_05ba7292">
         <description>Match ANL OpenAccount event</description>
-        <inputEntry id="_50e9e6ee">
+        <inputEntry id="_a5e73af5">
           <text>"ANL"</text>
         </inputEntry>
-        <inputEntry id="_f5b377ff">
+        <inputEntry id="_efcc46dc">
           <text>"OpenAccount"</text>
         </inputEntry>
-        <outputEntry id="_de443c21">
+        <outputEntry id="_05486d07">
           <text>true</text>
         </outputEntry>
       </rule>
-      <rule id="_276394b8">
+      <rule id="_cdef6e47">
         <description>No match for any other event</description>
-        <inputEntry id="_b671584a">
+        <inputEntry id="_67397ceb">
           <text>-</text>
         </inputEntry>
-        <inputEntry id="_3eafd3cd">
+        <inputEntry id="_d137bc73">
           <text>-</text>
         </inputEntry>
-        <outputEntry id="_c3c1969e">
+        <outputEntry id="_2ff8461e">
           <text>false</text>
         </outputEntry>
       </rule>
@@ -70,53 +70,53 @@
   </decision>
   <decision id="decision_userProfileMatch" name="userProfileMatch">
     <variable id="var_userProfileMatch" name="userProfileMatch" typeRef="boolean"/>
-    <informationRequirement id="_9c4e6975">
+    <informationRequirement id="_a46e15e3">
       <requiredInput href="#inputData_eventRequest"/>
     </informationRequirement>
     <decisionTable hitPolicy="FIRST" id="dt_userProfileMatch">
-      <input id="_ef0e0e1b" label="Age">
-        <inputExpression id="_5922eaaf" typeRef="number">
+      <input id="_dd964c26" label="Age">
+        <inputExpression id="_fe44eb92" typeRef="number">
           <text>eventRequest.userProfile.age</text>
         </inputExpression>
       </input>
-      <input id="_8fc9efc4" label="Account Type">
-        <inputExpression id="_af525d71" typeRef="string">
+      <input id="_bc0a7d47" label="Account Type">
+        <inputExpression id="_33395b22" typeRef="string">
           <text>eventRequest.userProfile.accountType</text>
         </inputExpression>
       </input>
-      <input id="_0e2f3287" label="Segment Type">
-        <inputExpression id="_4e0332d9" typeRef="string">
+      <input id="_20910f7d" label="Segment Type">
+        <inputExpression id="_33b83194" typeRef="string">
           <text>eventRequest.userProfile.segmentType</text>
         </inputExpression>
       </input>
-      <output id="_84e26a98" name="userProfileMatch" typeRef="boolean"/>
-      <rule id="_4b577029">
+      <output id="_f4cb761c" name="userProfileMatch" typeRef="boolean"/>
+      <rule id="_9cd9708a">
         <description>Advised OW account holder between 18 and 65</description>
-        <inputEntry id="_f05027ed">
+        <inputEntry id="_2ec99cfb">
           <text>(18..65)</text>
         </inputEntry>
-        <inputEntry id="_8e4363ea">
+        <inputEntry id="_6275b3a1">
           <text>"OW"</text>
         </inputEntry>
-        <inputEntry id="_5ea588c1">
+        <inputEntry id="_bb3df01b">
           <text>"Advised"</text>
         </inputEntry>
-        <outputEntry id="_b56d6779">
+        <outputEntry id="_41eec939">
           <text>true</text>
         </outputEntry>
       </rule>
-      <rule id="_f9b751e7">
+      <rule id="_b7a78fc9">
         <description>No match for other profiles</description>
-        <inputEntry id="_69f3df7e">
+        <inputEntry id="_3f5d967f">
           <text>-</text>
         </inputEntry>
-        <inputEntry id="_e6c1b646">
+        <inputEntry id="_397f377f">
           <text>-</text>
         </inputEntry>
-        <inputEntry id="_edc6574d">
+        <inputEntry id="_727fff32">
           <text>-</text>
         </inputEntry>
-        <outputEntry id="_d857336c">
+        <outputEntry id="_d15d77fa">
           <text>false</text>
         </outputEntry>
       </rule>
@@ -124,45 +124,45 @@
   </decision>
   <decision id="decision_Action_Decision" name="Action Decision">
     <variable id="var_Action_Decision" name="action" typeRef="string"/>
-    <informationRequirement id="_b425ed13">
+    <informationRequirement id="_cd034758">
       <requiredDecision href="#decision_eventMatch"/>
     </informationRequirement>
-    <informationRequirement id="_3dabd102">
+    <informationRequirement id="_e5887e1d">
       <requiredDecision href="#decision_userProfileMatch"/>
     </informationRequirement>
     <decisionTable hitPolicy="FIRST" id="dt_Action_Decision">
-      <input id="_58cdc568" label="Event Match">
-        <inputExpression id="_d360c8a9" typeRef="boolean">
+      <input id="_1a68743b" label="Event Match">
+        <inputExpression id="_12a33172" typeRef="boolean">
           <text>eventMatch</text>
         </inputExpression>
       </input>
-      <input id="_12b35752" label="User Profile Match">
-        <inputExpression id="_3174e40e" typeRef="boolean">
+      <input id="_7c1dd759" label="User Profile Match">
+        <inputExpression id="_c7c777cd" typeRef="boolean">
           <text>userProfileMatch</text>
         </inputExpression>
       </input>
-      <output id="_6fb26574" name="action" typeRef="string"/>
-      <rule id="_7bd670d1">
+      <output id="_00347d0d" name="action" typeRef="string"/>
+      <rule id="_23c9682b">
         <description>Both event and profile match - send SMS</description>
-        <inputEntry id="_50934d75">
+        <inputEntry id="_94b8256a">
           <text>true</text>
         </inputEntry>
-        <inputEntry id="_9a45ccfc">
+        <inputEntry id="_8efe0b95">
           <text>true</text>
         </inputEntry>
-        <outputEntry id="_fd899b98">
+        <outputEntry id="_3439faeb">
           <text>"SendSMS"</text>
         </outputEntry>
       </rule>
-      <rule id="_045de56e">
+      <rule id="_7d17f08d">
         <description>Any other combination - do not send</description>
-        <inputEntry id="_24e6ac22">
+        <inputEntry id="_bc30b856">
           <text>-</text>
         </inputEntry>
-        <inputEntry id="_2962acbb">
+        <inputEntry id="_efc24107">
           <text>-</text>
         </inputEntry>
-        <outputEntry id="_2e73510c">
+        <outputEntry id="_dc6c774b">
           <text>"NoSend"</text>
         </outputEntry>
       </rule>
