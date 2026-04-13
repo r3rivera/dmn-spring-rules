@@ -7,4 +7,5 @@ public class ClientAttribute {
     private String clientId;
     private String name;
     private Integer age;
+    private String clientType;
 }

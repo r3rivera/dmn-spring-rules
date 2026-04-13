@@ -24,9 +24,11 @@ public class RuleEngineEvaluationHandler {
         evaluationPayload.setEventName(request.getEventName());
 
         final UserEventInfoRequest userInfo = request.getClientInfo();
+
         final ClientAttribute clientAttribute = new ClientAttribute();
         clientAttribute.setClientId(userInfo.getClientId());
         clientAttribute.setName(userInfo.getName());
+        clientAttribute.setClientType(userInfo.getClientType());
         evaluationPayload.setEvaluatedUser(clientAttribute);
         return rulesetEngineService.evaluateRequest(evaluationPayload);
 

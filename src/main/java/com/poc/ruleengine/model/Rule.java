@@ -7,5 +7,5 @@ public class Rule {
     private String fieldName;
     private String fieldType;
     private String condition;
-    private String expectedValue;
+    private String expectedFieldValue;
 }

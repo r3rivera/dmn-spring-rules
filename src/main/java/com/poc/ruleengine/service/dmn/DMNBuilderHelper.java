@@ -14,6 +14,8 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class DMNBuilderHelper {
 
@@ -143,8 +145,8 @@ public final class DMNBuilderHelper {
         decisionElement.setAttribute("id", uid());
         decisionElement.setAttribute("name", targetInputId + "_DT");
 
-        final String variableName = "userInfoMatch";
-        final String variableType = "boolean";
+        final String variableName = "userInfoResult";
+        final String variableType = "string";
 
         // Variable element
         decisionElement.appendChild(createVariableElem(doc, variableName, variableType));
@@ -170,23 +172,48 @@ public final class DMNBuilderHelper {
             inputElem1.appendChild(createInputExpressionElem(doc, "evaluatedRequest.evaluatedUser." + rule.getFieldName(), rule.getFieldType()));
             decisionTableElem.appendChild(inputElem1);
         }
+        // Output Element
         final Element outputElem = doc.createElementNS(DMN_NS, "output");
         outputElem.setAttribute("id", uid());
         outputElem.setAttribute("name", variableName);
         outputElem.setAttribute("typeRef", variableType);
+        final Element outputValElem = doc.createElementNS(DMN_NS, "outputValues");
+        final Element outTextElem = doc.createElementNS(DMN_NS, "text");
+        final String resultList = Stream.of(userAttributeRuleset.getExpectedValue(), userAttributeRuleset.getDefaultValue())
+                        .collect(Collectors.joining("\",\"","\"","\""));
+        outTextElem.setTextContent(resultList);
+        outputValElem.appendChild(outTextElem);
+        outputElem.appendChild(outputValElem);
+
         decisionTableElem.appendChild(outputElem);
 
         final Element expectedRuleElem = doc.createElementNS(DMN_NS, "rule");
         expectedRuleElem.setAttribute("id", uid());
         for(Rule rule: userRules){
             if("string".equalsIgnoreCase(rule.getFieldType())) {
-                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedValue(), "text"));
+                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedFieldValue(), "text"));
             }else{
-                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedValue(), rule.getFieldType()));
+                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedFieldValue(), rule.getFieldType()));
             }
         }
-        expectedRuleElem.appendChild(createRuleOutputEntry(doc,"true", "text"));
+
+        expectedRuleElem.appendChild(createRuleOutputEntry(doc,String.format("\"%s\"", userAttributeRuleset.getExpectedValue()), "text"));
         decisionTableElem.appendChild(expectedRuleElem);
+
+        // Default Rule
+        final Element defaultUserRuleElem = doc.createElementNS(DMN_NS, "rule");
+        defaultUserRuleElem.setAttribute("id", uid());
+        for(Rule rule: userRules){
+            if("string".equalsIgnoreCase(rule.getFieldType())) {
+                defaultUserRuleElem.appendChild(createRuleEntry(doc, "-", "text"));
+            }else{
+                defaultUserRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedFieldValue(), rule.getFieldType()));
+            }
+        }
+        defaultUserRuleElem.appendChild(createRuleOutputEntry(doc,String.format("\"%s\"",
+                userAttributeRuleset.getDefaultValue()), "text"));
+        decisionTableElem.appendChild(defaultUserRuleElem);
+
         decisionElement.appendChild(decisionTableElem);
         return decisionElement;
     }

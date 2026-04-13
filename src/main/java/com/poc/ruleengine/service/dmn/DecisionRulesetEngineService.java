@@ -29,35 +29,29 @@ public class DecisionRulesetEngineService {
     private final RulesetStorageService storageService;
     private final RulesetCachingService cachingService;
 
-    public void loadRulesetByAppCode(String appCode){
-        DMNEntryRecord dmnRulesetRecord = cachingService.fetchDecisionRules(appCode);
+    public DMNEntryRecord loadRulesetByAppCode(String appCode){
         final KieHelper kieHelper = new KieHelper();
-        if(dmnRulesetRecord == null){
-            final String xmlContent = storageService.fetchDecisionRules(appCode);
+        final String xmlContent = storageService.fetchDecisionRules(appCode);
+        kieHelper.addContent(xmlContent, ResourceType.DMN);
 
-            kieHelper.addContent(xmlContent, ResourceType.DMN);
-
-            final KieContainer kieContainer = kieHelper.getKieContainer();
-            final DMNRuntime runtime = kieContainer.newKieSession().getKieRuntime(DMNRuntime.class);
-            if (runtime.getModels().isEmpty()) {
-                log.error("No DMN models found for {}", appCode);
-                throw new RuntimeException("No DMN models found for " + appCode);
-            }
-            DMNModel model = runtime.getModels().get(0);
-            cachingService.storeDecisionRules(appCode, new DMNEntryRecord(runtime, model));
+        final KieContainer kieContainer = kieHelper.getKieContainer();
+        final DMNRuntime runtime = kieContainer.newKieSession().getKieRuntime(DMNRuntime.class);
+        if (runtime.getModels().isEmpty()) {
+           log.error("No DMN models found for {}", appCode);
+           throw new RuntimeException("No DMN models found for " + appCode);
         }
-
+        final DMNModel model = runtime.getModels().getFirst();
+        final DMNEntryRecord dmnEntryRecord = new DMNEntryRecord(runtime, model);
+        cachingService.storeDecisionRules(appCode, dmnEntryRecord);
+        return dmnEntryRecord;
     }
 
 
     public EvaluationResponse evaluateRequest(EvaluationPayload payload) {
-
         DMNEntryRecord entry = cachingService.fetchDecisionRules(payload.getApplicationCode());
         if (entry == null) {
-            loadRulesetByAppCode(payload.getApplicationCode());
+            entry = loadRulesetByAppCode(payload.getApplicationCode());
         }
-        entry = cachingService.fetchDecisionRules(payload.getApplicationCode());
-
         final Map<String, List<Integer>> ruleMatches = new HashMap<>();
         entry.runtime().addListener(new DMNRuntimeEventListener() {
             @Override
