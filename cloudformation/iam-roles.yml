@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: IAM Roles for DMN Rule Engine - ECR push, ECS deploy, and public access via ALB
+
+Parameters:
+  AppName:
+    Type: String
+    Default: dmn-rule-engine
+    Description: Application name used to scope resource names and ARNs
+
+  ECRRepositoryName:
+    Type: String
+    Default: dmn-rule-engine
+    Description: Name of the ECR repository for this application
+
+  DeploymentPrincipalArn:
+    Type: String
+    Description: >
+      ARN of the principal that will assume the DeploymentRole
+      (e.g. a CI/CD IAM user, GitHub Actions OIDC role, or CodeBuild project ARN)
+
+Resources:
+
+  # ──────────────────────────────────────────────────────────────
+  # 1. DEPLOYMENT ROLE
+  #    Assumed by CI/CD pipelines or developers to:
+  #      - Push images to ECR
+  #      - Register ECS task definitions and update services
+  #      - Manage the ALB / target groups for public access
+  # ──────────────────────────────────────────────────────────────
+  DeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AppName}-deployment-role"
+      Description: Allows CI/CD to push to ECR, deploy to ECS, and manage ALB
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref DeploymentPrincipalArn
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ECRPush
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AuthToken
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Sid: PushImage
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                  - ecr:BatchGetImage
+                  - ecr:DescribeImages
+                  - ecr:DescribeRepositories
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:ListImages
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepositoryName}"
+
+        - PolicyName: ECSDeployment
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ECSClusterAndService
+                Effect: Allow
+                Action:
+                  - ecs:CreateCluster
+                  - ecs:DeleteCluster
+                  - ecs:DescribeClusters
+                  - ecs:CreateService
+                  - ecs:DeleteService
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                  - ecs:ListServices
+                  - ecs:RegisterTaskDefinition
+                  - ecs:DeregisterTaskDefinition
+                  - ecs:DescribeTaskDefinition
+                  - ecs:ListTaskDefinitions
+                  - ecs:DescribeTasks
+                  - ecs:ListTasks
+                  - ecs:RunTask
+                  - ecs:StopTask
+                  - ecs:TagResource
+                Resource: "*"
+              - Sid: PassRoleToECS
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt ECSTaskExecutionRole.Arn
+                  - !GetAtt ECSTaskRole.Arn
+                Condition:
+                  StringLike:
+                    iam:PassedToService: ecs-tasks.amazonaws.com
+
+        - PolicyName: ALBManagement
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: LoadBalancer
+                Effect: Allow
+                Action:
+                  - elasticloadbalancing:CreateLoadBalancer
+                  - elasticloadbalancing:DeleteLoadBalancer
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - elasticloadbalancing:ModifyLoadBalancerAttributes
+                  - elasticloadbalancing:CreateListener
+                  - elasticloadbalancing:DeleteListener
+                  - elasticloadbalancing:DescribeListeners
+                  - elasticloadbalancing:ModifyListener
+                  - elasticloadbalancing:CreateTargetGroup
+                  - elasticloadbalancing:DeleteTargetGroup
+                  - elasticloadbalancing:DescribeTargetGroups
+                  - elasticloadbalancing:ModifyTargetGroup
+                  - elasticloadbalancing:ModifyTargetGroupAttributes
+                  - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
+                  - elasticloadbalancing:DescribeTargetHealth
+                  - elasticloadbalancing:AddTags
+                Resource: "*"
+              - Sid: SecurityGroups
+                Effect: Allow
+                Action:
+                  - ec2:CreateSecurityGroup
+                  - ec2:DeleteSecurityGroup
+                  - ec2:DescribeSecurityGroups
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:AuthorizeSecurityGroupEgress
+                  - ec2:RevokeSecurityGroupEgress
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeInternetGateways
+                Resource: "*"
+
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${AppName}*"
+
+  # ──────────────────────────────────────────────────────────────
+  # 2. ECS TASK EXECUTION ROLE
+  #    Assumed by the ECS agent (not your app) to:
+  #      - Pull the container image from ECR
+  #      - Write container logs to CloudWatch
+  # ──────────────────────────────────────────────────────────────
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AppName}-ecs-task-execution-role"
+      Description: Allows ECS agent to pull images from ECR and ship logs to CloudWatch
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ECRPrivateAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECRRepositoryName}"
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. ECS TASK ROLE
+  #    Assumed by the running application container itself.
+  #    Extend this with any AWS service permissions your app needs
+  #    (e.g. S3, DynamoDB, SSM Parameter Store).
+  # ──────────────────────────────────────────────────────────────
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AppName}-ecs-task-role"
+      Description: Runtime role assumed by the DMN Rule Engine container
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AppLogging
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${AppName}*:*"
+
+Outputs:
+  DeploymentRoleArn:
+    Description: ARN of the CI/CD deployment role — use this in your pipeline
+    Value: !GetAtt DeploymentRole.Arn
+    Export:
+      Name: !Sub "${AppName}-deployment-role-arn"
+
+  ECSTaskExecutionRoleArn:
+    Description: ARN for the ECS task definition executionRoleArn field
+    Value: !GetAtt ECSTaskExecutionRole.Arn
+    Export:
+      Name: !Sub "${AppName}-task-execution-role-arn"
+
+  ECSTaskRoleArn:
+    Description: ARN for the ECS task definition taskRoleArn field
+    Value: !GetAtt ECSTaskRole.Arn
+    Export:
+      Name: !Sub "${AppName}-task-role-arn"
