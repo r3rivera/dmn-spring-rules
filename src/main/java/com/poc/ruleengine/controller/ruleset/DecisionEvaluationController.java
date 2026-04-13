@@ -19,7 +19,9 @@ public class DecisionEvaluationController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EvaluationResponse> evaluate(@RequestHeader("appCode") String appCode,
             @RequestBody CommunicationRequest request) {
-        EvaluationResponse response = ruleEngineEvaluationHandler.processAndEvaluate(appCode, request);
-        return ResponseEntity.ok(response);
+
+            final EvaluationResponse response = ruleEngineEvaluationHandler.processAndEvaluate(appCode, request);
+            return ResponseEntity.ok(response);
+
     }
 }

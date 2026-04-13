@@ -1,7 +1,8 @@
 package com.poc.ruleengine.domain;
 
-import com.poc.ruleengine.domain.client.ClientAttribute;
 import lombok.Data;
+
+import java.util.Map;
 
 /**
  POJO that represent thet request payload that will
@@ -11,5 +12,5 @@ import lombok.Data;
 public class EvaluationPayload {
     private String applicationCode;
     private String eventName;
-    private ClientAttribute evaluatedUser;
+    private Map<String, Object> evaluatedUser;
 }
