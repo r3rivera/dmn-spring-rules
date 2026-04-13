@@ -2,7 +2,9 @@ package com.poc.ruleengine.service.dmn;
 
 import com.poc.ruleengine.domain.InputField;
 import com.poc.ruleengine.domain.client.ClientAttribute;
+import com.poc.ruleengine.model.Rule;
 import com.poc.ruleengine.model.rules.DecisionRulesetRequest;
+import com.poc.ruleengine.model.rules.UserAttributeRuleset;
 import com.poc.ruleengine.service.database.RulesetStorageService;
 import com.poc.ruleengine.service.dmn.input.RuleInputHandler;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,7 @@ public class DecisionRulesetBuilderService {
                 .newDocumentBuilder()
                 .newDocument();
 
-        final String ruleSetName = String.format("%s_%s",request.getApplicationCode(), request.getEventName());
+        final String ruleSetName = String.format("%s_%s", request.getApplicationCode(), request.getEventName());
 
         // <definitions> root element
         final Element definitions = mainDoc.createElementNS(DMN_NS, "definitions");
@@ -46,15 +48,15 @@ public class DecisionRulesetBuilderService {
         definitions.setAttribute("typeLanguage", FEEL_NS);
 
 
-        // Define the expected input structure
-        final String inputClassName = ruleInputHandler.getInputClassName(ClientAttribute.class);
-        final List<InputField> inputFields = ruleInputHandler.extractFieldAndType(ClientAttribute.class);
-        if(!inputFields.isEmpty()) {
-            final Element itemDynamicDefinition = DMNBuilderHelper.createItemDefinition(mainDoc,
-                    DMNBuilderHelper.sanitize(inputClassName));
-            for(InputField inputField: inputFields){
+        //Derive input structure based on the rules provided
+        final UserAttributeRuleset userAttributeRuleset = request.getUserInfoRules();
+        final List<Rule> userInfoRuleset = userAttributeRuleset.getRules();
+        if (!userInfoRuleset.isEmpty()) {
+            final Element itemDynamicDefinition = DMNBuilderHelper.createItemDefinition(mainDoc, "ClientAttribute");
+            for (Rule userRule : userInfoRuleset) {
                 itemDynamicDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc,
-                        inputField.getName(), inputField.getType()));
+                        userRule.getFieldName(), userRule.getFieldType()));
+
             }
             definitions.appendChild(itemDynamicDefinition);
         }
@@ -63,14 +65,27 @@ public class DecisionRulesetBuilderService {
         final Element itemDefinition = DMNBuilderHelper.createItemDefinition(mainDoc, eventName);
         itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "applicationCode", "string"));
         itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "eventName", "string"));
-        itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "evaluatedUser", inputClassName));
+
+        if (!userInfoRuleset.isEmpty()){
+            itemDefinition.appendChild(DMNBuilderHelper.createItemComponentElement(mainDoc, "evaluatedUser",
+                    "ClientAttribute"));
+        }
         definitions.appendChild(itemDefinition);
 
         // Define that input field that reference the itemDefinition
         definitions.appendChild(DMNBuilderHelper.createInputDatatElement(mainDoc, eventName));
 
-        // Create the decision element for event
-        definitions.appendChild(DMNBuilderHelper.createEventDecisionElement(mainDoc, request,eventName + "Request"));
+        definitions.appendChild(DMNBuilderHelper.createEventDecisionElement(mainDoc, request, eventName + "Request"));
+
+
+        if (!userInfoRuleset.isEmpty()) {
+            final String clientAttribute = "ClientAttribute";
+            // Create the decision element for user info
+            definitions.appendChild(DMNBuilderHelper
+                    .createUserDecisionElement(mainDoc, request.getUserInfoRules(), eventName + "Request", clientAttribute));
+
+        }
+
 
         // Add the Event Definition
         mainDoc.appendChild(definitions);

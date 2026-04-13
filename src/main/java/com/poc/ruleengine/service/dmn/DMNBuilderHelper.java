@@ -1,6 +1,8 @@
 package com.poc.ruleengine.service.dmn;
 
+import com.poc.ruleengine.model.Rule;
 import com.poc.ruleengine.model.rules.DecisionRulesetRequest;
+import com.poc.ruleengine.model.rules.UserAttributeRuleset;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -10,6 +12,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.UUID;
 
 public final class DMNBuilderHelper {
@@ -67,6 +70,7 @@ public final class DMNBuilderHelper {
         return elementInputExpression;
     }
 
+    // Decision Element block for Event Specific
     public static Element createEventDecisionElement(Document doc, DecisionRulesetRequest request,
                                                      String targetInputId){
         final Element decisionElement = doc.createElementNS(DMN_NS, "decision");
@@ -131,6 +135,61 @@ public final class DMNBuilderHelper {
         decisionElement.appendChild(decisionTableElem);
         return decisionElement;
     }
+
+    public static Element createUserDecisionElement(Document doc, UserAttributeRuleset userAttributeRuleset, String sourceInput,
+                                                     String targetInputId) {
+
+        final Element decisionElement = doc.createElementNS(DMN_NS, "decision");
+        decisionElement.setAttribute("id", uid());
+        decisionElement.setAttribute("name", targetInputId + "_DT");
+
+        final String variableName = "userInfoMatch";
+        final String variableType = "boolean";
+
+        // Variable element
+        decisionElement.appendChild(createVariableElem(doc, variableName, variableType));
+
+        // Info Requirement Element
+        final Element infoRequirementElem = doc.createElementNS(DMN_NS, "informationRequirement");
+        infoRequirementElem.setAttribute("id", uid());
+        final Element requiredElement = doc.createElementNS(DMN_NS, "requiredInput");
+        requiredElement.setAttribute("href", "#ID_"+sourceInput);
+        infoRequirementElem.appendChild(requiredElement);
+        decisionElement.appendChild(infoRequirementElem);
+
+        // Decision Table Element
+        final Element decisionTableElem = doc.createElementNS(DMN_NS, "decisionTable");
+        decisionTableElem.setAttribute("id", uid());
+        decisionTableElem.setAttribute("hitPolicy", "FIRST");
+
+        final List<Rule> userRules = userAttributeRuleset.getRules();
+        for(Rule rule: userRules) {
+            final Element inputElem1 = doc.createElementNS(DMN_NS, "input");
+            inputElem1.setAttribute("id", uid());
+            inputElem1.setAttribute("label", rule.getFieldName());
+            inputElem1.appendChild(createInputExpressionElem(doc, "evaluatedRequest.evaluatedUser." + rule.getFieldName(), rule.getFieldType()));
+            decisionTableElem.appendChild(inputElem1);
+        }
+        final Element outputElem = doc.createElementNS(DMN_NS, "output");
+        outputElem.setAttribute("id", uid());
+        outputElem.setAttribute("name", variableName);
+        outputElem.setAttribute("typeRef", variableType);
+        decisionTableElem.appendChild(outputElem);
+
+        final Element expectedRuleElem = doc.createElementNS(DMN_NS, "rule");
+        expectedRuleElem.setAttribute("id", uid());
+        for(Rule rule: userRules){
+            if("string".equalsIgnoreCase(rule.getFieldType())) {
+                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedValue(), "text"));
+            }else{
+                expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedValue(), rule.getFieldType()));
+            }
+        }
+        decisionTableElem.appendChild(expectedRuleElem);
+        decisionElement.appendChild(decisionTableElem);
+        return decisionElement;
+    }
+
 
     // Rule Element Input Entry
     private static Element createRuleEntry(Document doc, String expectedStringValue, String expectedType){
