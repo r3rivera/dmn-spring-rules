@@ -185,6 +185,7 @@ public final class DMNBuilderHelper {
                 expectedRuleElem.appendChild(createRuleEntry(doc, rule.getExpectedValue(), rule.getFieldType()));
             }
         }
+        expectedRuleElem.appendChild(createRuleOutputEntry(doc,"true", "text"));
         decisionTableElem.appendChild(expectedRuleElem);
         decisionElement.appendChild(decisionTableElem);
         return decisionElement;

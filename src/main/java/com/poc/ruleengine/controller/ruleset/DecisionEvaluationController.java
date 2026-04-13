@@ -1,27 +1,25 @@
 package com.poc.ruleengine.controller.ruleset;
 
-import com.poc.ruleengine.domain.EvaluationRequest;
 import com.poc.ruleengine.domain.EvaluationResponse;
-import com.poc.ruleengine.service.dmn.DecisionRulesetEngineService;
+import com.poc.ruleengine.handler.RuleEngineEvaluationHandler;
+import com.poc.ruleengine.model.CommunicationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/rules/evaluate")
+@RequestMapping("/api/events/evaluate")
 @RequiredArgsConstructor
 public class DecisionEvaluationController {
 
-    private final DecisionRulesetEngineService rulesetEngineService;
+    private final RuleEngineEvaluationHandler ruleEngineEvaluationHandler;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EvaluationResponse> evaluate(@RequestBody EvaluationRequest request) {
-        EvaluationResponse response = rulesetEngineService.evaluateRequest(request);
+    public ResponseEntity<EvaluationResponse> evaluate(@RequestHeader("appCode") String appCode,
+            @RequestBody CommunicationRequest request) {
+        EvaluationResponse response = ruleEngineEvaluationHandler.processAndEvaluate(appCode, request);
         return ResponseEntity.ok(response);
     }
 }

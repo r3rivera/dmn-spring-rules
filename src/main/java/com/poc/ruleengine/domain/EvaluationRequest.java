@@ -8,6 +8,7 @@ import lombok.Data;
  * The context map is injected as DMN input data (keys = input data names).
  */
 @Data
+@Deprecated
 public class EvaluationRequest {
     private String rulesetName;
     // identifies which DMN to evaluate

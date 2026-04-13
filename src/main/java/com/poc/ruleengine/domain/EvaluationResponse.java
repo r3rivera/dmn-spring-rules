@@ -11,9 +11,6 @@ public class EvaluationResponse {
 
     private String rulesetName;
     private Map<String, Object> results;   // decision-name → result value
-
-    public EvaluationResponse() {}
-
     public EvaluationResponse(String rulesetName, Map<String, Object> results) {
         this.rulesetName = rulesetName;
         this.results = results;

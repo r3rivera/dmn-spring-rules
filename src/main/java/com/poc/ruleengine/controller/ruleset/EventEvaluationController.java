@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.*;
  * DMN model and returns the decision results.
  */
 
+@Deprecated
 @RestController
-@RequestMapping("/api/events/evaluate")
+@RequestMapping("/api/test/evaluate")
 @RequiredArgsConstructor
 public class EventEvaluationController {
 

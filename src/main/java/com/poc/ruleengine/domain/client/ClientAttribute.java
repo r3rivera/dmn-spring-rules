@@ -1,7 +1,9 @@
 package com.poc.ruleengine.domain.client;
 
-public class ClientAttribute {
+import lombok.Data;
 
+@Data
+public class ClientAttribute {
     private String clientId;
     private String name;
     private Integer age;

@@ -1,6 +1,7 @@
 package com.poc.ruleengine.service.dmn;
 
 import com.poc.ruleengine.domain.DecisionResult;
+import com.poc.ruleengine.domain.EvaluationPayload;
 import com.poc.ruleengine.domain.EvaluationRequest;
 import com.poc.ruleengine.domain.EvaluationResponse;
 import com.poc.ruleengine.domain.dmn.DMNEntryRecord;
@@ -49,13 +50,13 @@ public class DecisionRulesetEngineService {
     }
 
 
-    public EvaluationResponse evaluateRequest(EvaluationRequest request) {
+    public EvaluationResponse evaluateRequest(EvaluationPayload payload) {
 
-        DMNEntryRecord entry = cachingService.fetchDecisionRules(request.getRulesetName());
+        DMNEntryRecord entry = cachingService.fetchDecisionRules(payload.getApplicationCode());
         if (entry == null) {
-            loadRulesetByAppCode(request.getRulesetName());
+            loadRulesetByAppCode(payload.getApplicationCode());
         }
-        entry = cachingService.fetchDecisionRules(request.getRulesetName());
+        entry = cachingService.fetchDecisionRules(payload.getApplicationCode());
 
         final Map<String, List<Integer>> ruleMatches = new HashMap<>();
         entry.runtime().addListener(new DMNRuntimeEventListener() {
@@ -66,13 +67,13 @@ public class DecisionRulesetEngineService {
         });
 
         final DMNContext ctx = entry.runtime().newContext();
-        ctx.set("evaluatedRequest", request.getRequestContext());
+        ctx.set("evaluatedRequest", payload);
         DMNResult result = entry.runtime().evaluateAll(entry.model(), ctx);
 
         // collect any evaluation messages
         if (result.hasErrors()) {
             log.warn("DMN evaluation messages for '{}': {}",
-                    request.getRulesetName(), result.getMessages());
+                    payload.getApplicationCode(), result.getMessages());
         }
 
         // flatten decision results into a simple map
@@ -84,7 +85,7 @@ public class DecisionRulesetEngineService {
             decisions.put(dr.getDecisionName(), decisionResult);
         }
 
-        return new EvaluationResponse(request.getRulesetName(), decisions);
+        return new EvaluationResponse(payload.getApplicationCode(), decisions);
     }
 
     public boolean isLoaded(String appCode) {
