@@ -81,6 +81,12 @@
             <version>1.4.21</version>
         </dependency>
 
+        <!-- Valkey / Redis cache -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

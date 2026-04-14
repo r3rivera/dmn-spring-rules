@@ -42,7 +42,7 @@ public class DecisionRulesetEngineService {
         }
         final DMNModel model = runtime.getModels().getFirst();
         final DMNEntryRecord dmnEntryRecord = new DMNEntryRecord(runtime, model);
-        cachingService.storeDecisionRules(appCode, dmnEntryRecord);
+        cachingService.storeDecisionRules(appCode, xmlContent);
         return dmnEntryRecord;
     }
 
